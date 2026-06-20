@@ -84,7 +84,8 @@ jobs:
           cp "$RELEASE_DIR/tsukimi.exe" artifact/tsukimi-x86_64-windows/
           cp -r "$RELEASE_DIR/share" artifact/tsukimi-x86_64-windows/
 
-          ldd "$RELEASE_DIR/tsukimi.exe" \
+          find "$RELEASE_DIR/tsukimi.exe" /ucrt64/lib/gstreamer-1.0 \( -name '*.dll' -o -name '*.exe' \) \
+            | xargs -r ldd \
             | awk '/mingw64|ucrt64/ {print $3}' \
             | sort -u \
             | xargs -r -I{} cp -n "{}" artifact/tsukimi-x86_64-windows/

@@ -173,7 +173,7 @@ fn load_epoxy() {
 
 #[cfg(target_os = "windows")]
 fn load_epoxy() {
-    let library = unsafe { libloading::os::windows::Library::new("epoxy-0.dll") }.unwrap();
+    let library = unsafe { libloading::os::windows::Library::new("libepoxy-0.dll") }.unwrap();
     epoxy::load_with(|name| {
         unsafe { library.get::<_>(name.as_bytes()) }
             .map(|symbol| *symbol)
