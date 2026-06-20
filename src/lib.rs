@@ -26,7 +26,6 @@ use config::{
     version,
 };
 
-
 use clap::Parser;
 use gettextrs::*;
 use gtk::prelude::*;
