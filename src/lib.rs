@@ -1,6 +1,9 @@
 use std::{
     env,
-    sync::LazyLock,
+    sync::{
+        LazyLock,
+        OnceLock,
+    },
 };
 
 mod app;
@@ -22,7 +25,7 @@ use config::{
     PKGDATADIR,
     version,
 };
-use once_cell::sync::OnceCell;
+
 
 use clap::Parser;
 use gettextrs::*;
@@ -43,8 +46,22 @@ const APP_RESOURCE_PATH: &str = "/moe/tsuna/tsukimi";
 const GRESOURCE_FILE: &str = "tsukimi.gresource";
 
 pub fn locale_dir() -> &'static str {
-    static FLOCALEDIR: OnceCell<&'static str> = OnceCell::new();
-    FLOCALEDIR.get_or_init(|| LOCALEDIR)
+    static FLOCALEDIR: OnceLock<String> = OnceLock::new();
+    FLOCALEDIR.get_or_init(|| {
+        let Ok(exe_path) = env::current_exe() else {
+            return LOCALEDIR.to_string();
+        };
+        let Some(exe_dir) = exe_path.parent() else {
+            return LOCALEDIR.to_string();
+        };
+
+        let portable_locale_dir = exe_dir.join("share").join("locale");
+        if portable_locale_dir.exists() {
+            return portable_locale_dir.to_string_lossy().into_owned();
+        }
+
+        LOCALEDIR.to_string()
+    })
 }
 
 pub fn run() -> gtk::glib::ExitCode {

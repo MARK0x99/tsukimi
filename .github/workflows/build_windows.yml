@@ -77,6 +77,12 @@ jobs:
           cp resources/moe.tsuna.tsukimi.gschema.xml "$RELEASE_DIR/share/glib-2.0/schemas/"
           glib-compile-schemas "$RELEASE_DIR/share/glib-2.0/schemas"
 
+          for po_file in po/*.po; do
+            locale="$(basename "$po_file" .po)"
+            mkdir -p "$RELEASE_DIR/share/locale/$locale/LC_MESSAGES"
+            msgfmt "$po_file" -o "$RELEASE_DIR/share/locale/$locale/LC_MESSAGES/tsukimi.mo"
+          done
+
       - name: Bundle runtime
         run: |
           RELEASE_DIR=target/x86_64-pc-windows-gnu/release
