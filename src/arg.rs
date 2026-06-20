@@ -17,6 +17,9 @@ use crate::dyn_event;
 
 /// gl renderer will glitch on fractional scaling
 /// vulkan renderer has poor performance
+#[cfg(target_os = "windows")]
+const DEFAULT_RENDERER: &str = "cairo";
+#[cfg(not(target_os = "windows"))]
 const DEFAULT_RENDERER: &str = "ngl";
 
 #[derive(Parser, Debug)]
