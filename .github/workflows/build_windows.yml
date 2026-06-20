@@ -120,8 +120,8 @@ jobs:
             printf 'set "GSETTINGS_SCHEMA_DIR=%%APPDIR%%share\\glib-2.0\\schemas"\r\n'
             printf 'set "XDG_DATA_DIRS=%%APPDIR%%share"\r\n'
             printf 'set "GST_PLUGIN_PATH=%%APPDIR%%lib\\gstreamer-1.0"\r\n'
-            printf 'start "" "%%APPDIR%%tsukimi.exe" %%*\r\n'
-          } > artifact/tsukimi-x86_64-windows/tsukimi.cmd
+            printf '"%%APPDIR%%tsukimi.exe" %%*\r\n'
+          } > artifact/tsukimi-x86_64-windows/tsukimi-debug.cmd
 
           cd artifact
           zip -r tsukimi-x86_64-windows.zip tsukimi-x86_64-windows

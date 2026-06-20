@@ -70,7 +70,7 @@ target/release/tsukimi.exe
 
 ## GitHub Actions artifact
 
-The `Windows` workflow builds a portable `tsukimi-x86_64-windows.zip` artifact. Extract it on Windows 11 and launch `tsukimi.cmd`; the script sets `PATH`, `GSETTINGS_SCHEMA_DIR`, `XDG_DATA_DIRS`, and `GST_PLUGIN_PATH` for the bundled runtime.
+The `Windows` workflow builds a portable `tsukimi-x86_64-windows.zip` artifact. Extract it on Windows 11 and launch `tsukimi.exe`. The application initializes the bundled runtime paths automatically. For troubleshooting, launch `tsukimi-debug.cmd`; the script keeps a console open and sets `PATH`, `GSETTINGS_SCHEMA_DIR`, `XDG_DATA_DIRS`, and `GST_PLUGIN_PATH` for the bundled runtime.
 
 ## Notes
 
