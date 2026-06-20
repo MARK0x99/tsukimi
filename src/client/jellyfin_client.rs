@@ -308,8 +308,7 @@ impl JellyfinClient {
         let request = self
             .prepare_request(Method::GET, path, params)?
             .header("If-None-Match", etag.unwrap_or_default());
-        let res = request.send().await?;
-        Ok(res)
+        self.send_request(request).await
     }
 
     pub async fn delete(&self, path: &str, params: &[(&str, &str)]) -> Result<Response> {
