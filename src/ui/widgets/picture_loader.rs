@@ -1,4 +1,9 @@
 use std::{
+    cell::RefCell,
+    collections::{
+        HashMap,
+        VecDeque,
+    },
     path::PathBuf,
     sync::{
         LazyLock,
@@ -47,12 +52,61 @@ use crate::{
 
 const IMAGE_LOAD_DELAY: std::time::Duration = std::time::Duration::from_millis(80);
 const IMAGE_DECODE_RETRY_DELAY: std::time::Duration = std::time::Duration::from_millis(120);
+const IMAGE_MEMORY_CACHE_CAPACITY: usize = 256;
 static MAX_IMAGE_DECODE_TASKS: LazyLock<usize> = LazyLock::new(rayon::current_num_threads);
 static IMAGE_DECODE_TASKS: AtomicUsize = AtomicUsize::new(0);
+
+thread_local! {
+    static IMAGE_MEMORY_CACHE: RefCell<ImageMemoryCache> = RefCell::new(ImageMemoryCache::new());
+}
+
+struct ImageMemoryCache {
+    entries: HashMap<String, gtk::gdk::Texture>,
+    order: VecDeque<String>,
+}
+
+impl ImageMemoryCache {
+    fn new() -> Self {
+        Self {
+            entries: HashMap::new(),
+            order: VecDeque::new(),
+        }
+    }
+
+    fn get(&mut self, path: &str) -> Option<gtk::gdk::Texture> {
+        let texture = self.entries.get(path).cloned()?;
+        self.promote(path);
+        Some(texture)
+    }
+
+    fn insert(&mut self, path: String, texture: gtk::gdk::Texture) {
+        self.entries.insert(path.clone(), texture);
+        self.promote(&path);
+
+        while self.entries.len() > IMAGE_MEMORY_CACHE_CAPACITY {
+            if let Some(path) = self.order.pop_front() {
+                self.entries.remove(&path);
+            }
+        }
+    }
+
+    fn promote(&mut self, path: &str) {
+        self.order.retain(|entry| entry != path);
+        self.order.push_back(path.to_string());
+    }
+}
 
 enum LoadedImage {
     Texture(gtk::gdk::Texture),
     Decoded(DecodedPaintable),
+}
+
+fn memory_cache_get(path: &str) -> Option<gtk::gdk::Texture> {
+    IMAGE_MEMORY_CACHE.with(|cache| cache.borrow_mut().get(path))
+}
+
+fn memory_cache_insert(path: String, texture: gtk::gdk::Texture) {
+    IMAGE_MEMORY_CACHE.with(|cache| cache.borrow_mut().insert(path, texture));
 }
 
 struct DecodePermit;
@@ -295,6 +349,14 @@ impl PictureLoader {
         &self, cache_file_path: PathBuf, cancellable: gio::Cancellable, generation: u64,
         fetch_on_error: bool,
     ) {
+        if let Some(path) = cache_file_path.to_str()
+            && let Some(texture) = memory_cache_get(path)
+        {
+            self.imp().picture.set_paintable(Some(&texture));
+            self.set_picture_visible(cancellable, generation);
+            return;
+        }
+
         let file = gio::File::for_path(&cache_file_path);
         self.load_file_bytes(
             file,
@@ -451,6 +513,13 @@ impl PictureLoader {
 
                 match decoded {
                     Ok(LoadedImage::Texture(texture)) => {
+                        if let Some(path) = cache_file_path
+                            .as_ref()
+                            .and_then(|path| path.to_str())
+                            .map(ToOwned::to_owned)
+                        {
+                            memory_cache_insert(path, texture.clone());
+                        }
                         obj.imp().picture.set_paintable(Some(&texture));
                         obj.set_picture_visible(cancellable, generation);
                     }
